@@ -8,23 +8,13 @@ import { hostOnlyMiddleware } from "../../lib/HostOnly"
 import { createAccessToken } from "../../lib/tools"
 import createHttpError from "http-errors"
 
-// interface {
-//   name: string
-//   avatar: string
-//   email: string
-//   password: string
-//   role: string
-//   timestamps: boolean
-//   _id: string
-// }
-
-interface RequestedUser {
+export interface RequestedUser {
   _id: string
   role: string
   token: string
 }
 
-interface UserRequest extends Request {
+export interface UserRequest extends Request {
   user: RequestedUser
 }
 

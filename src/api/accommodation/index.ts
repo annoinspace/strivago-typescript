@@ -1,15 +1,20 @@
 import express from "express"
-import AccommodationsModel from "./model.js"
-import { hostOnlyMiddleware } from "../../lib/HostOnly.js"
-import { jwtAuthMiddleware } from "../../lib/jwtAuth.js"
+import { Request } from "express"
+import { Document } from "mongoose"
+import { UserRequest } from "../users/index"
+import AccommodationsModel from "./model"
+import { AccommodationInterface } from "../users/types"
+import { hostOnlyMiddleware } from "../../lib/HostOnly"
+import { jwtAuthMiddleware } from "../../lib/jwtAuth"
 
 const accommodationRouter = express.Router()
 
 accommodationRouter.post("/", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
+    const request = req as UserRequest
     const newAccommodation = new AccommodationsModel({
       ...req.body,
-      host: req.user._id
+      host: request.user._id
     })
     const accommodation = await newAccommodation.save()
     res.status(201).send(accommodation)
@@ -20,7 +25,8 @@ accommodationRouter.post("/", jwtAuthMiddleware, hostOnlyMiddleware, async (req,
 
 accommodationRouter.get("/", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
-    const hostId = req.user._id
+    const request = req as UserRequest
+    const hostId = request.user._id
     const accommodations = await AccommodationsModel.find({ host: hostId })
     if (accommodations) {
       res.status(200).send(accommodations)
@@ -33,7 +39,7 @@ accommodationRouter.get("/", jwtAuthMiddleware, hostOnlyMiddleware, async (req, 
 accommodationRouter.get("/:accommId", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
     const accomId = req.params.accommId
-    const specificAccom = await AccommodationsModel.findById(accomId)
+    const specificAccom: Document<AccommodationInterface> | null = await AccommodationsModel.findById(accomId)
     if (specificAccom) {
       res.status(200).send(specificAccom)
     } else {
@@ -47,10 +53,11 @@ accommodationRouter.get("/:accommId", jwtAuthMiddleware, hostOnlyMiddleware, asy
 accommodationRouter.put("/:accommId", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
     const accomId = req.params.accommId
+    const request = req as UserRequest
 
-    const specificAccom = await AccommodationsModel.findById(accomId)
-    const accomOwner = specificAccom.host.toString()
-    const userMakingRequest = req.user._id
+    const specificAccom: Document<AccommodationInterface> | null = await AccommodationsModel.findById(accomId)
+    const accomOwner = specificAccom?.get("host").toString()
+    const userMakingRequest = request.user._id
 
     if (specificAccom) {
       if (userMakingRequest === accomOwner) {
@@ -73,10 +80,11 @@ accommodationRouter.put("/:accommId", jwtAuthMiddleware, hostOnlyMiddleware, asy
 accommodationRouter.delete("/:accommId", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
     const accomId = req.params.accommId
-    const specificAccom = await AccommodationsModel.findById(accomId)
+    const request = req as UserRequest
+    const specificAccom: Document<AccommodationInterface> | null = await AccommodationsModel.findById(accomId)
 
     if (!specificAccom) return res.status(404).send({ message: "accommodation does not exist" })
-    if (req.user._id !== specificAccom.host.toString())
+    if (request.user._id !== specificAccom?.get("host").toString())
       return res.status(403).send({ message: "user and host don't match" })
 
     await AccommodationsModel.findByIdAndDelete(accomId)

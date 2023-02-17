@@ -1,7 +1,8 @@
 import mongoose from "mongoose"
-
+import { AccommodationInterface } from "../users/types"
 const { Schema, model } = mongoose
-const accommodationSchema = new Schema(
+
+const accommodationSchema = new Schema<AccommodationInterface>(
   {
     host: { type: Schema.Types.ObjectId, ref: "Users" },
     name: { type: String, required: true },
