@@ -1,7 +1,13 @@
 import createHttpError from "http-errors"
-import { verifyAccessToken } from "./tools.ts"
+import { RequestHandler, Request } from "express"
+import { verifyAccessToken } from "./tools"
+import { TokenPayload } from "./tools"
 
-export const jwtAuthMiddleware = async (req, res, next) => {
+interface UserRequest extends Request {
+  user?: TokenPayload
+}
+
+export const jwtAuthMiddleware: RequestHandler = async (req, res, next) => {
   if (!req.headers.authorization) {
     next(createHttpError(401, "Please provide Bearer token in authorization header"))
   } else {

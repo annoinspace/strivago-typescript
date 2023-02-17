@@ -1,10 +1,32 @@
 import express from "express"
 import UsersModel from "./model"
+import User from "./model"
+import { Request } from "express"
 import AccommodationsModel from "../accommodation/model"
 import { jwtAuthMiddleware } from "../../lib/jwtAuth"
 import { hostOnlyMiddleware } from "../../lib/HostOnly"
 import { createAccessToken } from "../../lib/tools"
 import createHttpError from "http-errors"
+
+// interface {
+//   name: string
+//   avatar: string
+//   email: string
+//   password: string
+//   role: string
+//   timestamps: boolean
+//   _id: string
+// }
+
+interface RequestedUser {
+  _id: string
+  role: string
+  token: string
+}
+
+interface UserRequest extends Request {
+  user: RequestedUser
+}
 
 const usersRouter = express.Router()
 
@@ -58,8 +80,14 @@ usersRouter.get("/", jwtAuthMiddleware, async (req, res, next) => {
 
 usersRouter.get("/me", jwtAuthMiddleware, async (req, res, next) => {
   try {
-    if (req.user) {
-      const user = await UsersModel.findById(req.user._id).select({ password: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+    const request = req as UserRequest
+    if (request.user) {
+      const user = await UsersModel.findById(request.user._id).select({
+        password: 0,
+        createdAt: 0,
+        updatedAt: 0,
+        __v: 0
+      })
       res.send(user)
     } else {
       res.status(400).send({ message: "something went getting your profile" })
@@ -72,8 +100,9 @@ usersRouter.get("/me", jwtAuthMiddleware, async (req, res, next) => {
 usersRouter.get("/me/accommodations", jwtAuthMiddleware, hostOnlyMiddleware, async (req, res, next) => {
   try {
     console.log("req.user", req.user)
-    if (req.user.role === "Host") {
-      const hostId = req.user._id
+    const request = req as UserRequest
+    if (request.user.role === "Host") {
+      const hostId = request.user._id
       const accommodations = await AccommodationsModel.find({ host: hostId })
       res.send(accommodations)
     } else {
@@ -86,6 +115,7 @@ usersRouter.get("/me/accommodations", jwtAuthMiddleware, hostOnlyMiddleware, asy
 
 usersRouter.delete("/:userId", jwtAuthMiddleware, async (req, res, next) => {
   try {
+    const request = req as UserRequest
     const userId = request.params.userId
     if (userId === request.user._id) {
       const userToDelete = await User.findByIdAndDelete(userId)

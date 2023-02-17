@@ -1,5 +1,6 @@
 import mongoose from "mongoose"
 import bcrypt from "bcrypt"
+import { UserDocument, UserModel } from "./types"
 
 const { Schema, model } = mongoose
 
@@ -39,8 +40,8 @@ usersSchema.methods.toJson = function () {
   return user
 }
 
-usersSchema.static("checkCredentials", async function (email, password) {
-  const user = await this.findOne({ email })
+usersSchema.static("checkCredentials", async function (email: string, password: string) {
+  const user: UserDocument = await this.findOne({ email })
 
   if (user) {
     const passwordMatch = await bcrypt.compare(password, user.password)
@@ -54,4 +55,4 @@ usersSchema.static("checkCredentials", async function (email, password) {
   }
 })
 
-export default model("User", usersSchema)
+export default model<UserDocument, UserModel>("User", usersSchema)
